@@ -7,11 +7,12 @@ class Plotter(object):
 	DIMENSIONS = 3
 	VIEW_DISTANCE = 1024
 
-	def __init__(self, files, offset=0, length=0, weight=None, verbose=False):
+	def __init__(self, files, offset=0, length=0, weight=None, show_grids=False, verbose=False):
 		import pyqtgraph.opengl as gl
 		from pyqtgraph.Qt import QtGui
 
 		self.verbose = verbose
+		self.show_grids = show_grids
 		self.files = files
 		self.weight = weight
 		self.offset = offset
@@ -78,6 +79,8 @@ class Plotter(object):
 		self._print("Generating data points for %s" % file_name)
 
 		with BlockFile(file_name, 'r', offset=self.offset, length=self.length) as fp:
+			fp.MAX_TRAILING_SIZE = 0
+
 			while True:
 				(data, dlen) = fp.read_block()
 				if not data or not dlen:
@@ -131,10 +134,28 @@ class Plotter(object):
 
 		return scatter_plot
 
-	def plot(self):
-		from pyqtgraph.Qt import QtCore, QtGui
+	def plot(self, wait=True):
+		import pyqtgraph.opengl as gl
 
 		self.window.show()
+
+		if self.show_grids:
+			xgrid = gl.GLGridItem()
+			ygrid = gl.GLGridItem()
+			zgrid = gl.GLGridItem()
+
+			self.window.addItem(xgrid)
+			self.window.addItem(ygrid)
+			self.window.addItem(zgrid)
+
+			# Rotate x and y grids to face the correct direction
+			xgrid.rotate(90, 0, 1, 0)
+			ygrid.rotate(90, 1, 0, 0)
+
+			# Scale grids to the appropriate dimensions
+			xgrid.scale(12.8, 12.8, 12.8)
+			ygrid.scale(12.8, 12.8, 12.8)
+			zgrid.scale(12.8, 12.8, 12.8)
 
 		for file_name in self.files:
 			(data_points, data_weights) = self._generate_data_points(file_name)
@@ -146,6 +167,12 @@ class Plotter(object):
 			self._print("Generating graph from %d plot points" % len(plot_points))
 
 			self.window.addItem(self._generate_plot(plot_points, data_weights))
+
+		if wait:
+			self.wait()
+
+	def wait(self):
+		from pyqtgraph.Qt import QtCore, QtGui
 
 		t = QtCore.QTimer()
 		t.start(50)
@@ -179,8 +206,6 @@ class Plotter2D(Plotter):
 		elif self.plane_count == 2:
 			return (ord(data[0]), ord(data[1]), 0)
 		
-
-
 if __name__ == '__main__':
 	import sys
 	

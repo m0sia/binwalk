@@ -2,7 +2,6 @@
 from __future__ import print_function
 import os
 import sys
-import subprocess
 from os import listdir, path
 from distutils.core import setup
 
@@ -18,10 +17,6 @@ if "--yes" in sys.argv:
 	IGNORE_WARNINGS = True
 else:
 	IGNORE_WARNINGS = False
-
-def which(fname):
-	cmd = ["which", fname]
-	return subprocess.Popen(cmd, stdout=subprocess.PIPE).stdout.readline().strip()
 
 def warning(lines, terminate=True, prompt=True):
 	WIDTH = 115
@@ -88,8 +83,7 @@ if status != 0:
 	]
 	
 	warning(msg, prompt=True)
-else:
-	if "install" in sys.argv:
+elif "install" in sys.argv:
 		if os.system("make install") != 0:
 			msg = ["Install warning: failed to install compression libraries.",
 				"Some plugins will not work without these libraries."
@@ -107,11 +101,7 @@ fd = open("binwalk/magic/binwalk", "wb")
 for magic in magic_files:
 	fpath = path.join("magic", magic)
 	if path.isfile(fpath):
-		data = open(fpath).read()
-		try:
-			fd.write(data)
-		except TypeError:
-			fd.write(bytes(data, 'UTF-8'))
+		fd.write(open(fpath, "rb").read())
 fd.close()
 
 # The data files to install along with the binwalk module
@@ -119,12 +109,12 @@ install_data_files = ["magic/*", "config/*", "plugins/*"]
 
 # Install the binwalk module, script and support files
 setup(	name = "binwalk",
-	version = "1.2.3",
+	version = "1.3.0 beta",
 	description = "Firmware analysis tool",
 	author = "Craig Heffner",
 	url = "https://github.com/devttys0/binwalk",
 
-	requires = ["magic", "matplotlib.pyplot"],	
+	requires = ["magic", "pyqtgraph"],
 	packages = ["binwalk"],
 	package_data = {"binwalk" : install_data_files},
 	scripts = ["bin/binwalk"],
